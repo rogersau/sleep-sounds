@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Sleep Sounds",
+    "slug": "sleep-sounds",
+    "version": "1.1.0",
+    "platforms": ["android", "ios"],
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#10241f",
+    "icon": "./dist/icon-512.png",
+    "android": {
+      "package": "com.rogersau.sleepsounds",
+      "versionCode": 2
+    },
+    "ios": {
+      "bundleIdentifier": "com.rogersau.sleepsounds",
+      "supportsTablet": true
+    },
+    "plugins": [
+      ["react-native-audio-api", {
+        "disableStaticExternalLibs": true,
+        "iosBackgroundMode": true,
+        "androidForegroundService": true,
+        "androidFSTypes": ["mediaPlayback"],
+        "androidPermissions": [
+          "android.permission.FOREGROUND_SERVICE",
+          "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        ]
+      }]
+    ]
+  }
+}
