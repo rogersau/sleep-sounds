@@ -1,23 +1,27 @@
-const PLAYER_VERSION = '6';
+const PLAYER_VERSION = '13';
 const CACHE = 'forest-rain-v' + PLAYER_VERSION;
-const AUDIO_FILES = Object.freeze({
-  rain: 'rain.wav?v=' + PLAYER_VERSION,
-  pink: 'pink.wav?v=' + PLAYER_VERSION
-});
-const SHELL = ['./', 'index.html', 'style.css', 'player-config.js?v=6', 'app.js?v=6',
-  'native-mix.js?v=6', 'master-mix.js?v=6', 'manifest.webmanifest',
+const PREVIOUS_CACHES = ['forest-rain-v12', 'forest-rain-v11', 'forest-rain-v10', 'forest-rain-v9', 'forest-rain-v8', 'forest-rain-v7', 'forest-rain-v6'];
+const AUDIO_FILES = Object.freeze(Object.fromEntries(
+  SOUNDS.map(({id, version}) => [id, id + '.wav?v=' + version])
+));
+const SHELL = ['./', 'index.html', 'style.css?v=13', 'sound-library.js?v=8',
+  'player-config.js?v=13', 'app.js?v=11', 'gapless-player.js?v=9', 'session-settings.js?v=9',
+  'audio-sleep-timer.js?v=9', 'saved-mixes.js?v=10', 'native-mix.js?v=9',
+  'master-mix.js?v=8', 'manifest.webmanifest',
   'icon-192.png', 'icon-512.png'];
 const FILES = [...SHELL, ...Object.values(AUDIO_FILES)];
-const MIX_STORAGE_KEY = 'forestMixV6';
+const MIX_STORAGE_KEY = 'sleepSoundsMixV8';
 function readSavedMix(storage) {
-  const valid = v => Number.isFinite(v) && v >= 0 && v <= 100;
-  try {
-    const current = JSON.parse(storage.getItem(MIX_STORAGE_KEY));
-    if (Array.isArray(current) && valid(current[0]) && valid(current[1])) {
-      return current.slice(0, 2);
-    }
-    const previous = JSON.parse(storage.getItem('forestMix'));
-    if (Array.isArray(previous) && valid(previous[0])) return [previous[0] || 70, 0];
-  } catch {}
-  return [70, 0];
+  for (const key of [MIX_STORAGE_KEY, 'forestMixV6', 'forestMix']) {
+    try {
+      const saved = JSON.parse(storage.getItem(key));
+      if (key === 'forestMix') {
+        if (Array.isArray(saved) && validLevel(saved[0])) return levelsFor({rain: saved[0] || 70});
+      } else {
+        const levels = restoreLevels(saved);
+        if (levels) return levels;
+      }
+    } catch {}
+  }
+  return DEFAULT_LEVELS.slice();
 }

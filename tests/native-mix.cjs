@@ -10,7 +10,7 @@ const ctx = vm.createContext({
     }};
   },
 });
-for (const file of ['player-config.js', 'native-mix.js']) {
+for (const file of ['sound-library.js', 'player-config.js', 'native-mix.js']) {
   vm.runInContext(fs.readFileSync('dist/' + file, 'utf8'), ctx);
 }
 (async () => {
@@ -47,5 +47,32 @@ for (const file of ['player-config.js', 'native-mix.js']) {
   for (let i = 0; i < sample.length; i++) {
     assert.equal(sample[i], Math.round(layers[0][i] * .7 + layers[1][i] * .4) || 0);
   }
-  console.log('PASS: rain-only never fetches or mixes pink noise; explicit opt-in loads it; one 1920-second native WAV, correct blend and no padding at all 14 internal joins.');
+
+  const oceanOnly = await vm.runInContext('loadMixLayers([0,0,0.7])', ctx);
+  assert.deepEqual(calls, ['rain.wav?v=6', 'pink.wav?v=6', 'ocean.wav?v=8']);
+  assert.equal(oceanOnly[0], null);
+  const ocean = oceanOnly[2];
+  assert.equal(ocean.length, 64 * 24000 * 2);
+  ctx.oceanOnly = oceanOnly;
+  const fallback = vm.runInContext('makeNativeMix(oceanOnly,[0,0,0.7])', ctx);
+  const boundary = 44 + ocean.byteLength;
+  const repeated = new Int16Array(await fallback.slice(boundary - 4, boundary + 4).arrayBuffer());
+  const samples = [ocean.at(-2), ocean.at(-1), ocean[0], ocean[1]].map(v => Math.round(v * 0.7) || 0);
+  assert.deepEqual(Array.from(repeated), samples);
+  assert.equal(fallback.size, blob.size);
+  const timed = vm.runInContext('makeNativeMix(solo,[0.7,0], {seconds: 3, fadeSeconds: 1})', ctx);
+  assert.equal(timed.size, 44 + 3 * 96000);
+  const fadeStarts = 2 * 24000;
+  const midway = fadeStarts + 12000;
+  const wet = new Int16Array(await timed.slice(44 + midway * 4, 44 + midway * 4 + 4).arrayBuffer());
+  const midGain = 11999 / 23999;
+  const expected = Array.from(solo[0].slice(midway * 2, midway * 2 + 2))
+    .map(sample => Math.round(Math.round(sample * 0.7) * midGain) || 0);
+  assert.deepEqual(Array.from(wet), expected);
+  assert.deepEqual(Array.from(new Int16Array(await timed.slice(-4).arrayBuffer())), [0, 0]);
+  const longest = vm.runInContext('makeNativeMix(solo,[0.7,0], {seconds: 7200, fadeSeconds: 60})', ctx);
+  assert.equal(longest.size, 44 + 7200 * 96000);
+  assert.equal(new DataView(await longest.slice(40, 44).arrayBuffer()).getUint32(0, true), longest.size - 44);
+  console.log('PASS: mix loads only selected sounds, loops shorter recordings inside the native track, and inserts no padding.');
+  console.log('PASS: Screen-off timer writes a finite WAV and fades to a zero-valued last frame.');
 })().catch(e => {console.error(e); process.exitCode = 1;});

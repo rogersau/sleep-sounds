@@ -7,3 +7,5 @@ function calculateMasterMix(levels, percent) {
   const gain = Math.min(requested / 150, sum ? 0.98 / (0.85 * sum) : 1);
   return {volumes:weights.map(v=>v*gain),effective:gain*150,limited:gain*150<requested-0.1};
 }
+
+if (typeof module !== 'undefined') module.exports = {calculateMasterMix};
