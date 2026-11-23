@@ -39,6 +39,8 @@ Open <http://localhost:8080>. The web app uses plain HTML, CSS, and JavaScript. 
 
 ## Android and iOS
 
+For an installable APK, sign in to GitHub and open the latest successful [Android APK build](https://github.com/rogersau/sleep-sounds/actions/workflows/android-apk.yml). Select **Download Sleep Sounds APK** in the run summary. Builds are available for 30 days.
+
 Install the dependencies with Node.js 22.13+ or 24.3+.
 
 ```sh

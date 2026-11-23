@@ -1,0 +1,82 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-apk.yml'
+      - 'App.tsx'
+      - 'app.json'
+      - 'dist/**'
+      - 'index.ts'
+      - 'mobile/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/mobile/**'
+      - 'tsconfig.json'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies and check native code
+        run: |
+          npm ci
+          npm run typecheck
+          npm run test:native
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            package-lock.json
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install Android SDK packages
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
+
+      - name: Build the release APK
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2
+
+      - name: Verify the APK signature
+        run: |
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs "$apk"
+          cp "$apk" "$RUNNER_TEMP/Sleep-Sounds.apk"
+
+      - name: Upload the APK
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ runner.temp }}/Sleep-Sounds.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add the download link to the run summary
+        env:
+          APK_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: printf '[Download Sleep Sounds APK](%s)\n' "$APK_URL" >> "$GITHUB_STEP_SUMMARY"
