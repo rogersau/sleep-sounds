@@ -63,7 +63,7 @@ export function ForestScene() {
 }
 
 const styles = StyleSheet.create({
-  scene: { minHeight: 200, padding: 21, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 22 },
+  scene: { minHeight: 156, padding: 18, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 22 },
   star: { position: 'absolute', backgroundColor: '#e7f0db' },
   moon: {
     position: 'absolute', top: 24, right: '16%', width: 40, height: 40, borderRadius: 20,
@@ -71,6 +71,6 @@ const styles = StyleSheet.create({
   },
   pine: { position: 'absolute', width: 0, height: 0, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
   shade: { ...StyleSheet.absoluteFill, top: '40%' },
-  title: { color: colors.text, fontFamily: Platform.select({ ios: 'Georgia', android: 'serif' }), fontSize: 38, lineHeight: 44, letterSpacing: 0.4 },
+  title: { color: colors.text, fontFamily: Platform.select({ ios: 'Georgia', android: 'serif' }), fontSize: 34, lineHeight: 40, letterSpacing: 0.4 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20, letterSpacing: 0.3, marginTop: 6 },
 });

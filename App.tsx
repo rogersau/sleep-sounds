@@ -2,11 +2,14 @@ import Slider from '@react-native-community/slider';
 import { useState } from 'react';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SOUNDS, SOUND_GROUPS, PRESETS, levelsFor } from './dist/sound-library.js';
+import { formatRemaining } from './dist/session-settings.js';
 import { SavedMixes, SleepTimer } from './mobile/SessionControls';
 import { ForestScene } from './mobile/ForestScene';
+import { MiniPlayer } from './mobile/MiniPlayer';
+import { SoundTile } from './mobile/SoundTile';
 import { readLevels, saveLevels } from './mobile/preferences';
 import { useSoundscape } from './mobile/useSoundscape';
 import { masterMix, type Levels } from './mobile/mix';
@@ -14,6 +17,7 @@ import { colors } from './mobile/theme';
 
 const icon = require('./dist/icon-192.png');
 const presets = PRESETS.map(preset => ({ ...preset, levels: levelsFor(preset.mix) }));
+const defaultSoundLevels = SOUNDS.map((_, index) => presets.find(preset => preset.levels[index] > 0)?.levels[index] ?? 60);
 
 type VolumeControlProps = {
   title: string;
@@ -58,10 +62,12 @@ function VolumeControl({ title, description, value, min = 0, max = 100, step = 1
 }
 
 function PlayerScreen() {
+  const insets = useSafeAreaInsets();
   const [levels, setLevels] = useState(readLevels);
   const [boost, setBoost] = useState(100);
   const [helpOpen, setHelpOpen] = useState(false);
   const [linkError, setLinkError] = useState(false);
+  const [draggingSound, setDraggingSound] = useState(false);
   const audio = useSoundscape();
 
   function applyLevels(next: Levels, nextBoost = boost) {
@@ -76,6 +82,12 @@ function PlayerScreen() {
     audio.updateMix(levels, next);
   }
 
+  function changeSound(index: number, value: number, commit: boolean) {
+    const next = levels.map((level, i) => i === index ? value : level);
+    if (commit) applyLevels(next);
+    else audio.updateMix(next, boost);
+  }
+
   const boostDescription = masterMix(levels, boost).limited
     ? 'Headroom protection is active. The sound balance is unchanged.'
     : 'Increase gradually, especially with headphones.';
@@ -83,11 +95,18 @@ function PlayerScreen() {
   const playbackStatus = audio.error ?? (audio.timerFinished ? 'Sleep timer finished.' : audio.preparing
     ? 'Preparing audio…'
     : audio.playing ? 'Playing · You can lock your screen' : 'Start at a comfortable volume.');
+  const activeCount = levels.filter(level => level > 0).length;
+  const timerLabel = audio.timerFinished ? 'Timer finished'
+    : audio.timerSettings.minutes
+      ? audio.timerRemaining != null && audio.timerRemaining > 0
+        ? `${audio.playing ? '' : 'Paused · '}${formatRemaining(audio.timerRemaining)} left`
+        : `${audio.timerSettings.minutes} min timer`
+      : 'Timer off';
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 112 + insets.bottom }]} scrollEnabled={!draggingSound}>
         <View style={styles.content}>
           <View style={styles.brand}>
             <Image source={icon} style={styles.icon} accessible={false} />
@@ -121,15 +140,7 @@ function PlayerScreen() {
             </Text>
 
             <View style={styles.controls}>
-              <SleepTimer
-                settings={audio.timerSettings}
-                remaining={audio.timerRemaining}
-                playing={audio.playing}
-                finished={audio.timerFinished}
-                disabled={audio.preparing}
-                onChange={audio.updateTimer}
-              />
-              <View style={styles.presets}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presets}>
                 {presets.map(preset => {
                   const selected = preset.levels.every((level, index) => level === levels[index]);
                   return (
@@ -145,22 +156,25 @@ function PlayerScreen() {
                     </Pressable>
                   );
                 })}
-              </View>
-              <SavedMixes levels={levels} boost={boost} disabled={audio.preparing}
-                onRecall={mix => applyLevels(mix.levels, mix.boost)} />
+              </ScrollView>
+              <Text style={styles.small}>Tap a sound to toggle it. Drag sideways for volume.</Text>
               {SOUND_GROUPS.map(group => (
                 <View key={group} style={styles.soundGroup}>
                   <Text accessibilityRole="header" style={styles.groupTitle}>{group}</Text>
-                  {SOUNDS.map((sound, index) => sound.group === group && (
-                    <VolumeControl
-                      key={sound.id}
-                      title={sound.title}
-                      description={sound.description}
-                      value={levels[index]}
-                      disabled={audio.preparing}
-                      onChange={value => applyLevels(levels.map((level, i) => i === index ? value : level))}
-                    />
-                  ))}
+                  <View style={styles.soundTiles}>
+                    {SOUNDS.map((sound, index) => sound.group === group && (
+                      <SoundTile
+                        key={sound.id}
+                        title={sound.title}
+                        description={sound.description}
+                        value={levels[index]}
+                        defaultValue={defaultSoundLevels[index]}
+                        disabled={audio.preparing}
+                        onChange={(value, commit) => changeSound(index, value, commit)}
+                        onDragChange={setDraggingSound}
+                      />
+                    ))}
+                  </View>
                 </View>
               ))}
               <VolumeControl
@@ -173,6 +187,16 @@ function PlayerScreen() {
                 disabled={audio.preparing}
                 onChange={applyBoost}
               />
+              <SleepTimer
+                settings={audio.timerSettings}
+                remaining={audio.timerRemaining}
+                playing={audio.playing}
+                finished={audio.timerFinished}
+                disabled={audio.preparing}
+                onChange={audio.updateTimer}
+              />
+              <SavedMixes levels={levels} boost={boost} disabled={audio.preparing}
+                onRecall={mix => applyLevels(mix.levels, mix.boost)} />
             </View>
           </View>
 
@@ -207,6 +231,15 @@ function PlayerScreen() {
           </View>
         </View>
       </ScrollView>
+      <View style={[styles.miniPlayer, { bottom: 12 + insets.bottom }]}>
+        <MiniPlayer
+          playing={audio.playing}
+          preparing={audio.preparing}
+          activeCount={activeCount}
+          timerLabel={timerLabel}
+          onToggle={() => audio.toggle(levels, boost)}
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -217,6 +250,7 @@ export default function App() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  miniPlayer: { position: 'absolute', left: 12, right: 12 },
   scroll: { paddingHorizontal: 18, paddingVertical: 14, alignItems: 'center' },
   content: { width: '100%', maxWidth: 600, gap: 14 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 3 },
@@ -240,12 +274,13 @@ const styles = StyleSheet.create({
   error: { color: colors.error },
   controls: { gap: 17 },
   soundGroup: { gap: 15, borderTopWidth: 1, borderColor: colors.border, paddingTop: 16 },
+  soundTiles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
   groupTitle: { color: colors.accent, fontSize: 12, fontWeight: '600', letterSpacing: 1.6, textTransform: 'uppercase' },
   levelLabel: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 },
   levelTitle: { color: colors.text, fontSize: 15, fontWeight: '600', flexShrink: 1 },
   levelValue: { color: colors.accent, fontSize: 13, fontVariant: ['tabular-nums'] },
   slider: { height: 40 },
-  presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presets: { flexDirection: 'row', gap: 8, paddingRight: 4 },
   preset: { borderColor: colors.hairline, borderWidth: 1, backgroundColor: colors.control, borderRadius: 999, minHeight: 44, justifyContent: 'center', paddingVertical: 7, paddingHorizontal: 16 },
   selected: { borderColor: colors.selectedBorder, backgroundColor: colors.selected },
   presetText: { color: colors.text, fontSize: 13 },

@@ -45,7 +45,7 @@ function makeNativeMix(layers, volumes, timer = null) {
     if (!layer?.length || CYCLE_SAMPLES % layer.length !== 0) throw Error('Sound does not fit the mix cycle');
     inputs.push({layer, volume});
   }
-  // Each source is 32, 64 or 128 seconds, so its own loop also joins at the end of this cycle.
+  // Each source fits into the cycle a whole number of times and wraps cleanly.
   const pcm = new Int16Array(CYCLE_SAMPLES);
   for (let i = 0; i < pcm.length; i++) {
     let sum = 0;

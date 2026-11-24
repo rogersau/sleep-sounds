@@ -14,6 +14,9 @@ const assets: Record<Layer, number> = {
   stream: require('../dist/stream.wav'),
   brown: require('../dist/brown.wav'),
   white: require('../dist/white.wav'),
+  airplane: require('../dist/airplane.wav'),
+  train: require('../dist/train.wav'),
+  'coffee-shop': require('../dist/coffee-shop.wav'),
 };
 const buffers = new Map<Layer, Promise<AudioBuffer>>();
 

@@ -9,7 +9,7 @@
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>Sleep Sounds</title>
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
   <main>
@@ -44,6 +44,7 @@
         <h2 id="soundsHeading">Sounds</h2>
         <p>Tap to toggle · Drag for volume</p>
       </div>
+      <div class="sound-filters" id="soundFilters" role="group" aria-label="Filter sounds"></div>
       <div class="sound-tiles" id="soundLibrary" role="group" aria-labelledby="soundsHeading"></div>
 
       <details>
@@ -122,14 +123,14 @@
   </main>
 
   <audio id="mixAudio" loop preload="auto" playsinline></audio>
-  <script src="sound-library.js?v=8"></script>
-  <script src="player-config.js?v=13"></script>
-  <script src="native-mix.js?v=9"></script>
+  <script src="sound-library.js?v=15"></script>
+  <script src="player-config.js?v=16"></script>
+  <script src="native-mix.js?v=14"></script>
   <script src="master-mix.js?v=8"></script>
   <script src="gapless-player.js?v=9"></script>
   <script src="session-settings.js?v=9"></script>
   <script src="audio-sleep-timer.js?v=9"></script>
   <script src="saved-mixes.js?v=10"></script>
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

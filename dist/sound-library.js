@@ -10,8 +10,14 @@ const SOUNDS = /** @type {const} */ ([
     version: 8, credit: 'kvgarlic', source: 'https://freesound.org/people/kvgarlic/sounds/149743/'},
   {id: 'brown', title: 'Brown noise', group: 'Noise', description: 'Low, steady rumble.', seconds: 32, version: 8},
   {id: 'white', title: 'White noise', group: 'Noise', description: 'Even, brighter hiss.', seconds: 32, version: 8},
+  {id: 'airplane', title: 'Airplane cabin', group: 'Ambience', description: 'Steady hum inside an airliner.', seconds: 64,
+    version: 14, credit: 'RyanKingArt', source: 'https://freesound.org/people/RyanKingArt/sounds/702132/'},
+  {id: 'train', title: 'Train', group: 'Ambience', description: 'Rhythmic click-clack over rail joints.', seconds: 16,
+    version: 14, credit: 'KayleRustone', source: 'https://freesound.org/people/KayleRustone/sounds/474977/'},
+  {id: 'coffee-shop', title: 'Coffee shop', group: 'Ambience', description: 'Soft café chatter and movement behind the counter.', seconds: 64,
+    version: 14, credit: 'AwenAudio', source: 'https://freesound.org/people/AwenAudio/sounds/403064/'},
 ]);
-const SOUND_GROUPS = ['Nature', 'Noise'];
+const SOUND_GROUPS = ['Nature', 'Ambience', 'Noise'];
 const PRESETS = /** @type {const} */ ([
   {id: 'rain', title: 'Rain only', mix: {rain: 70}},
   {id: 'coast', title: 'Coast', mix: {ocean: 70}},
@@ -21,6 +27,10 @@ const PRESETS = /** @type {const} */ ([
   {id: 'white', title: 'White noise', mix: {white: 55}},
   {id: 'rain-pink', title: 'Rain & pink', mix: {rain: 65, pink: 20}},
   {id: 'rain-louder', title: 'Louder rain', mix: {rain: 90}},
+  {id: 'cabin', title: 'Cabin', mix: {airplane: 65}},
+  {id: 'cafe', title: 'Café', mix: {'coffee-shop': 55}},
+  {id: 'train', title: 'Night train', mix: {train: 55}},
+  {id: 'rain-cafe', title: 'Rain + café', mix: {rain: 60, 'coffee-shop': 25}},
 ]);
 
 /** @typedef {(typeof SOUNDS)[number]['id']} SoundId */

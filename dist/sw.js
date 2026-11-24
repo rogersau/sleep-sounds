@@ -1,4 +1,4 @@
-importScripts('sound-library.js?v=8', 'player-config.js?v=13');
+importScripts('sound-library.js?v=15', 'player-config.js?v=16');
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(path=>new Request(new URL(path,self.location.href),{cache:"reload"})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil((async () => {
   const keys = await caches.keys();

@@ -9,7 +9,7 @@ let starting = false, installPrompt, currentURL, mixKey = '', revision = 0;
 const TIMER_STORAGE_KEY = 'sleepSoundsTimer';
 const presetLabels = {
   rain: 'Rain', coast: 'Ocean', fireside: 'Fireplace', creek: 'Stream', dark: 'Brown noise',
-  'rain-pink': 'Rain + pink',
+  'rain-pink': 'Rain + pink', cabin: 'Cabin', cafe: 'Café', train: 'Night train', 'rain-cafe': 'Rain + café',
 };
 let timerSettings = DEFAULT_TIMER;
 let screenOffSeconds = null;
@@ -18,6 +18,23 @@ let refreshSavedMixes;
 
 function renderSoundOptions() {
   const sounds = SOUND_GROUPS.flatMap(group => SOUNDS.filter(sound => sound.group === group));
+  const groups = new Map(SOUND_GROUPS.map(group => [group, SOUNDS.filter(sound => sound.group === group).length]));
+  for (const group of [null, ...SOUND_GROUPS]) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `${group ?? 'All'} ${group ? groups.get(group) : sounds.length}`;
+    button.dataset.filter = group ?? 'all';
+    button.setAttribute('aria-pressed', String(!group));
+    button.onclick = () => {
+      document.querySelectorAll('[data-filter]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      soundTiles.forEach((tile, id) => {
+        const sound = SOUNDS.find(item => item.id === id);
+        tile.button.closest('.sound-tile').hidden = Boolean(group && sound.group !== group);
+      });
+    };
+    $('soundFilters').append(button);
+  }
+
   for (const {id, title} of sounds) {
     const fragment = $('soundControl').content.cloneNode(true);
     const button = fragment.querySelector('button');

@@ -14,6 +14,9 @@ STEMS = {
     "stream": (64, 0.04, 8),
     "brown": (32, 0.04, 4),
     "white": (32, 0.04, 4),
+    "airplane": (64, 0.06, 4),
+    "train": (16, 0.04, 8),
+    "coffee-shop": (64, 0.03, 10),
 }
 
 for name, (seconds, minimum_rms, maximum_variation) in STEMS.items():
