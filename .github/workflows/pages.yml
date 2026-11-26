@@ -1,0 +1,61 @@
+name: Deploy Web to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pages.yml'
+      - 'App.tsx'
+      - 'app.json'
+      - 'dist/**'
+      - 'index.ts'
+      - 'mobile/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - uses: actions/configure-pages@v5
+
+      - name: Install dependencies and build Expo web
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build:web
+          touch web-build/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-build
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

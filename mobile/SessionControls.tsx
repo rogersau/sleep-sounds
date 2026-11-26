@@ -197,16 +197,20 @@ export function SavedMixes({ levels, boost, disabled, onRecall }: SavedMixesProp
   }
 
   function remove(mix: PersonalMix) {
+    const performDelete = () => {
+      if (store(mixes.filter(item => item !== mix), 'Deleted ' + mix.name + '.') && editing === mix.name) {
+        resetForm();
+      }
+    };
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Delete “${mix.name}”?`)) {
+        performDelete();
+      }
+      return;
+    }
     Alert.alert('Delete saved mix?', mix.name, [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: () => {
-          if (store(mixes.filter(item => item !== mix), 'Deleted ' + mix.name + '.') && editing === mix.name) {
-            resetForm();
-          }
-        },
-      },
+      { text: 'Delete', style: 'destructive', onPress: performDelete },
     ]);
   }
 
@@ -298,6 +302,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(3, 6, 10, 0.72)',
   },
   sheetCard: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
     backgroundColor: colors.surfaceSolid,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,

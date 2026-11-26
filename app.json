@@ -3,7 +3,7 @@
     "name": "Sleep Sounds",
     "slug": "sleep-sounds",
     "version": "1.4.0",
-    "platforms": ["android", "ios"],
+    "platforms": ["android", "ios", "web"],
     "userInterfaceStyle": "dark",
     "backgroundColor": "#070a0f",
     "icon": "./dist/icon-512.png",
@@ -11,6 +11,14 @@
       "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#070a0f"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./dist/icon-192.png",
+      "backgroundColor": "#070a0f"
+    },
+    "experiments": {
+      "baseUrl": "/sleep-sounds"
     },
     "android": {
       "package": "com.rogersau.sleepsounds",

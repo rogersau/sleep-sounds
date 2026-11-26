@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 
 import { soundIcons } from './icons';
 import { colors, defaultSoundAccent, soundAccents } from './theme';
@@ -142,17 +142,19 @@ export function SoundTile({ id, title, description, value, defaultValue, disable
         if (nativeEvent.touches.length > 1) finishGesture();
       }}
     >
-      {level > 0 && (
-        <View style={[styles.fillWrap, { width: `${level}%` }]}>
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.02)', palette.fill]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.fillGradient}
-          />
-          <View style={[styles.fillEdge, { backgroundColor: palette.accent }]} />
-        </View>
-      )}
+      <View style={styles.fillTrack} pointerEvents="none">
+        {level > 0 && (
+          <View style={[styles.fillWrap, { width: `${level}%` }]}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.02)', palette.fill]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.fillGradient}
+            />
+            {level < 100 && <View style={[styles.fillEdge, { backgroundColor: palette.accent }]} />}
+          </View>
+        )}
+      </View>
       <View style={styles.topRow}>
         {icon && (
           <Image
@@ -180,14 +182,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderColor: colors.hairline,
     backgroundColor: colors.surface,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer', userSelect: 'none' } as object : null),
   },
   pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.55 },
+  fillTrack: {
+    ...StyleSheet.absoluteFill,
+  },
   fillWrap: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
+    height: '100%',
     flexDirection: 'row',
   },
   fillGradient: {

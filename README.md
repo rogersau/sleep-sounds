@@ -5,9 +5,9 @@
 <p align="center">An offline sound mixer for sleep and focus on the web, Android, and iOS.</p>
 
 <p align="center">
+  <a href="https://rogersau.github.io/sleep-sounds/">Open web app</a> ·
   <a href="https://github.com/rogersau/sleep-sounds/releases/tag/v1.0.0">Download v1.0.0 APK</a> ·
-  <a href="#run-the-web-app">Run the web app</a> ·
-  <a href="#android-and-ios">Android &amp; iOS</a> ·
+  <a href="#run-locally">Run locally</a> ·
   <a href="AUDIO-CREDITS.md">Audio credits</a>
 </p>
 
@@ -22,36 +22,23 @@
 - **Save your favourites.** Open the **Saved mixes** sheet from the header to name, star, recall, rename, and delete mixes on your device. Saved mixes include your volume boost.
 - **Listen offline.** The app runs locally without an account or backend. The mobile app bundles all ten sounds, and the web app can cache the full library for offline use.
 
-## Run the web app
+## Run locally
 
-```sh
-python3 -m http.server 8080 --directory dist
-```
+The web and mobile apps share a single Expo / React Native codebase (`App.tsx` and `mobile/`). The live web app is hosted on GitHub Pages at <https://rogersau.github.io/sleep-sounds/>.
 
-Open <http://localhost:8080>. The web app uses plain HTML, CSS, and JavaScript. Run it on localhost or HTTPS to use the service worker. Open **Settings** from the header to **Install app** or **Save offline** (caches the full library, about 63 MB).
+Download the signed Android APK directly from the [v1.0.0 release](https://github.com/rogersau/sleep-sounds/releases/tag/v1.0.0), or grab the latest CI build from the [Android APK workflow](https://github.com/rogersau/sleep-sounds/actions/workflows/android-apk.yml) (retained for 30 days).
 
-<details>
-<summary>Gapless and screen-off playback</summary>
-
-- **Gapless** loops each sound and adjusts volume during playback.
-- If locking the screen interrupts playback, choose **Screen-off** in **Settings** and tap **Play**. Without a timer, the 32-minute track may briefly pause when it repeats. With a timer, it ends with the selected fade. Changing the mix or timer rebuilds the track.
-
-</details>
-
-## Android and iOS
-
-Download the signed APK directly from the [v1.0.0 release](https://github.com/rogersau/sleep-sounds/releases/tag/v1.0.0), or grab the latest CI build from the [Android APK workflow](https://github.com/rogersau/sleep-sounds/actions/workflows/android-apk.yml) (retained for 30 days).
-
-To run locally, install dependencies with Node.js 22.13+ or 24.3+:
+Install dependencies with Node.js 22.13+ or 24.3+:
 
 ```sh
 npm ci
-npm run android
+npm run web      # Run Expo web locally
+npm run android  # Run on Android emulator or connected device
 ```
 
-For Android, have the Android SDK and an emulator or connected phone ready. On a Mac with Xcode, use `npm run ios`.
+For Android, have the Android SDK and an emulator or connected phone ready. On a Mac with Xcode, use `npm run ios`. To export a static web build for GitHub Pages, run `npm run build:web`.
 
-The native app shares the same Midnight Obsidian interface as the web app: presets strip, category filters with one-tap clear, full-tile volume faders with custom icons, a single floating bottom dock, and bottom sheets for the sleep timer, saved mixes, and settings. It bundles all ten sounds for offline listening, remembers your mix, and resets the boost at launch. To test offline and lock-screen listening, use an installed release build with the JavaScript bundle embedded.
+The native app bundles all ten sounds for offline listening, remembers your mix, and resets the boost at launch. To test offline and lock-screen listening, use an installed release build with the JavaScript bundle embedded.
 
 ## Development checks
 

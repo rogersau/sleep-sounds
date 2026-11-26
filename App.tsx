@@ -247,18 +247,20 @@ function PlayerScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.dockWrap, { bottom: 12 + insets.bottom }]}>
-        <MiniPlayer
-          playing={audio.playing}
-          preparing={audio.preparing}
-          mixTitle={summary.dock}
-          statusText={playbackStatus}
-          isError={Boolean(audio.error)}
-          timerBadge={timerBadge}
-          timerActive={timerActive}
-          onToggle={() => audio.toggle(levels, boost)}
-          onOpenTimer={() => setSheet('timer')}
-        />
+      <View style={[styles.dockWrap, { bottom: 12 + insets.bottom }]} pointerEvents="box-none">
+        <View style={styles.dockInner}>
+          <MiniPlayer
+            playing={audio.playing}
+            preparing={audio.preparing}
+            mixTitle={summary.dock}
+            statusText={playbackStatus}
+            isError={Boolean(audio.error)}
+            timerBadge={timerBadge}
+            timerActive={timerActive}
+            onToggle={() => audio.toggle(levels, boost)}
+            onOpenTimer={() => setSheet('timer')}
+          />
+        </View>
       </View>
 
       <BottomSheet visible={sheet === 'timer'} title="Sleep timer" onClose={() => setSheet(null)}>
@@ -489,7 +491,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 14,
     right: 14,
-    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  dockInner: {
+    width: '100%',
+    maxWidth: 640,
   },
   settingCard: {
     padding: 14,
