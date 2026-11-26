@@ -16,6 +16,40 @@ let screenOffSeconds = null;
 let countdown;
 let refreshSavedMixes;
 
+const PLAY_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M8 5.2v13.6a1 1 0 0 0 1.52.85l10.6-6.8a1 1 0 0 0 0-1.7L9.52 4.35A1 1 0 0 0 8 5.2z"/></svg>';
+const PAUSE_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1.4"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.4"/></svg>';
+
+const SOUND_SVGS = {
+  rain: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 14.2A3.7 3.7 0 0 1 5.8 7a5.2 5.2 0 0 1 9.8-1.1A3.9 3.9 0 0 1 17 14.2"/><path d="M8.5 17l-1 3M12.5 17.2l-1 3.2M16.2 17l-1 3"/></svg>',
+  ocean: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 9.5c2.5-2.8 5.5-2.8 8 0s5.5 2.8 11 0"/><path d="M2.5 15.5c2.5-2.8 5.5-2.8 8 0s5.5 2.8 11 0"/></svg>',
+  fireplace: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2c2.8 3.4 6.2 6.5 6.2 10.8a6.2 6.2 0 1 1-12.4 0c0-2.6 1.4-4.7 2.8-6.2.3 1.7 1.2 2.4 1.7 2.2-.3-2.5.4-4.8 1.7-6.8z"/><path d="M12 13c1.5 1.4 2.4 2.6 2.4 4a2.4 2.4 0 1 1-4.8 0c0-1.4.9-2.6 2.4-4z"/></svg>',
+  stream: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7.5c3.2-2.2 6.8 2.2 10 0s5.2-1.4 8 0"/><path d="M3 12.5c3.2-2.2 6.8 2.2 10 0s5.2-1.4 8 0"/><path d="M4.5 17.5c3.2-2 6.8 2 10 0s4.5-1.2 6 0"/></svg>',
+  airplane: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 4.5L4.5 19.5M12.5 11.5L5.5 7.5 7 6l8.2 2.8M12.5 11.5l4 7 1.5-1.5-2.8-8.2M6.8 17.2L3.8 16M6.8 17.2L8 20.2"/></svg>',
+  train: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="3.8" width="13" height="13.2" rx="2.8"/><line x1="5.8" y1="10.5" x2="18.2" y2="10.5"/><circle cx="9" cy="13.8" r="1" fill="currentColor"/><circle cx="15" cy="13.8" r="1" fill="currentColor"/><path d="M8.2 17.2L6.4 20.5M15.8 17.2l1.8 3.3M7.2 19.3h9.6"/></svg>',
+  'coffee-shop': '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 9h12v6.2a3.3 3.3 0 0 1-3.3 3.3H8.1a3.3 3.3 0 0 1-3.3-3.3V9z"/><path d="M16.8 10h1.4a2.4 2.4 0 0 1 0 4.8h-1.4"/><path d="M8.5 6.5c-.6-1.2.6-2 0-3.2M12.5 6.5c-.6-1.2.6-2 0-3.2M4 21h13.6"/></svg>',
+  pink: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.5 10.2v3.6M8.25 7.2v9.6M12 4.8v14.4M15.75 7.8v8.4M19.5 10v4"/></svg>',
+  brown: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5.2 12.5v4M9.7 9.5v8M14.3 8v10M18.8 11v6"/></svg>',
+  white: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"><path d="M3.6 9.8v4.4M6.4 6.2v11.6M9.2 10.5v3M12 5v14M14.8 8.5v7M17.6 6.5v11M20.4 9.8v4.4"/></svg>',
+};
+
+function setupSheets() {
+  const bindings = [
+    ['openTimer', 'timerSheet'],
+    ['openSaved', 'savedSheet'],
+    ['openSettings', 'settingsSheet'],
+  ];
+  for (const [triggerId, dialogId] of bindings) {
+    const dialog = $(dialogId);
+    $(triggerId).onclick = () => dialog.showModal();
+    dialog.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.querySelectorAll('[data-close-sheet]').forEach(btn => {
+      btn.onclick = () => dialog.close();
+    });
+  }
+}
+
 function renderSoundOptions() {
   const sounds = SOUND_GROUPS.flatMap(group => SOUNDS.filter(sound => sound.group === group));
   const groups = new Map(SOUND_GROUPS.map(group => [group, SOUNDS.filter(sound => sound.group === group).length]));
@@ -37,16 +71,18 @@ function renderSoundOptions() {
 
   for (const {id, title} of sounds) {
     const fragment = $('soundControl').content.cloneNode(true);
+    const tileEl = fragment.querySelector('.sound-tile');
     const button = fragment.querySelector('button');
     const input = fragment.querySelector('input');
     const levelText = fragment.querySelector('.sound-level');
-    const meter = fragment.querySelector('.sound-meter');
     const preset = PRESETS.find(({mix}) => mix[id] > 0);
     const tile = {button, input, levelText, lastLevel: preset?.mix[id] ?? 60};
+    tileEl.dataset.sound = id;
+    fragment.querySelector('.sound-icon').innerHTML = SOUND_SVGS[id] ?? '';
     fragment.querySelector('.sound-name').textContent = title;
     input.id = id;
     input.setAttribute('aria-label', title + ' volume');
-    bindSoundTile(tile, meter);
+    bindSoundTile(tile);
     soundTiles.set(id, tile);
     $('soundLibrary').append(fragment);
   }
@@ -70,7 +106,7 @@ function renderSoundOptions() {
   }
 }
 
-function bindSoundTile(tile, meter) {
+function bindSoundTile(tile) {
   const {button, input} = tile;
   let gesture;
   let suppressClick = false;
@@ -86,7 +122,7 @@ function bindSoundTile(tile, meter) {
     suppressClick = false;
     gesture = {
       id: event.pointerId, x: event.clientX, y: event.clientY, initialLevel: input.value,
-      lastLevel: tile.lastLevel, bounds: meter.getBoundingClientRect(), dragging: false,
+      lastLevel: tile.lastLevel, bounds: button.getBoundingClientRect(), dragging: false,
     };
     button.setPointerCapture(event.pointerId);
   });
@@ -127,6 +163,7 @@ function bindSoundTile(tile, meter) {
   });
 }
 
+setupSheets();
 renderSoundOptions();
 DEFAULT_LEVELS.forEach((value, index) => $(tracks[index]).value = value);
 try {
@@ -143,6 +180,22 @@ function values() {
   return tracks.map(name => Number($(name).value));
 }
 
+function summarizeActive(mix) {
+  const active = SOUNDS.map((sound, index) => ({title: sound.title, level: mix[index]})).filter(item => item.level > 0);
+  if (!active.length) return {subtitle: 'Night air, softly mixed.', dock: 'No sounds active', count: 0};
+  if (active.length === 1) {
+    const label = `${active[0].title} · ${active[0].level}%`;
+    return {subtitle: label, dock: label, count: 1};
+  }
+  const names = active.slice(0, 2).map(item => item.title).join(', ');
+  const extra = active.length > 2 ? ` +${active.length - 2}` : '';
+  return {
+    subtitle: `${names}${extra}`,
+    dock: `${active.length} sounds · ${names}${extra}`,
+    count: active.length,
+  };
+}
+
 function applyMix() {
   const mix = values();
   const master = calculateMasterMix(mix, $('boost').value);
@@ -156,6 +209,10 @@ function applyMix() {
     tile.button.setAttribute('aria-pressed', String(level > 0));
     tile.input.setAttribute('aria-valuetext', label);
   });
+  const summary = summarizeActive(mix);
+  $('mixSubtitle').textContent = summary.subtitle;
+  $('dockTitle').textContent = summary.dock;
+  $('clearMix').hidden = summary.count === 0;
   $('boostValue').value = $('boost').value + '%';
   $('boostNote').textContent = master.limited ? 'Boost limited to prevent clipping.' : '';
   try { localStorage.setItem(MIX_STORAGE_KEY, JSON.stringify(savedMix(mix))); } catch {}
@@ -178,12 +235,17 @@ function isPlaying() {
 
 function updatePlayback() {
   const playing = isPlaying();
-  $('playText').textContent = starting ? 'Loading…' : playing ? 'Pause' : 'Play';
-  $('playIcon').textContent = playing ? 'Ⅱ' : '▶';
+  const label = starting ? 'Loading…' : playing ? 'Pause' : 'Play';
+  $('playText').textContent = label;
+  $('play').setAttribute('aria-label', label);
+  $('playIcon').innerHTML = playing ? PAUSE_SVG : PLAY_SVG;
   $('playIcon').hidden = starting;
+  document.body.classList.toggle('is-playing', playing);
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
   if (isGapless() && gapless.active && !starting) {
-    $('status').textContent = playing ? '' : 'Audio stopped. Tap Play.';
+    $('status').textContent = playing ? 'Playing' : 'Audio stopped. Tap Play.';
+  } else if (!starting && playing) {
+    $('status').textContent = 'Playing';
   }
   updateCountdown();
   if (playing && timerSettings.minutes && !countdown) {
@@ -199,13 +261,15 @@ function setStarting(value) {
   $('play').disabled = value;
   if (value) {
     $('playText').textContent = 'Loading…';
+    $('play').setAttribute('aria-label', 'Loading…');
     $('playIcon').hidden = true;
+    $('status').textContent = 'Preparing audio…';
   }
   for (const name of [...tracks, 'boost']) $(name).disabled = value;
   for (const {button} of soundTiles.values()) button.disabled = value;
   document.querySelectorAll('[data-mix]').forEach(button => button.disabled = value);
-  $('timerMinutes').disabled = value;
-  $('timerFade').disabled = value || timerSettings.minutes === 0;
+  document.querySelectorAll('#timerMinuteChips button, #timerFadeChips button').forEach(btn => btn.disabled = value);
+  $('clearMix').disabled = value;
   $('savedMixes').disabled = value;
 }
 
@@ -230,12 +294,26 @@ function finishTimer() {
 function updateCountdown() {
   const remaining = isGapless() ? gapless.timer?.remaining : remainingScreenOffTime();
   const hint = $('timerStatus');
-  if (!timerSettings.minutes || remaining == null) hint.textContent = '';
-  else if (remaining <= 0) {
+  const badge = $('timerBadge');
+  const pill = $('openTimer');
+  if (!timerSettings.minutes) {
     hint.textContent = '';
+    badge.textContent = 'Off';
+    pill.classList.remove('is-active');
+    return;
+  }
+  pill.classList.add('is-active');
+  if (remaining == null) {
+    hint.textContent = `${timerSettings.minutes} min timer ready`;
+    badge.textContent = `${timerSettings.minutes}m`;
+  } else if (remaining <= 0) {
+    hint.textContent = '';
+    badge.textContent = `${timerSettings.minutes}m`;
     if (isGapless() && isPlaying()) finishTimer();
   } else {
-    hint.textContent = isPlaying() ? formatRemaining(remaining) + ' left' : 'Paused · ' + formatRemaining(remaining);
+    const formatted = formatRemaining(remaining);
+    hint.textContent = isPlaying() ? formatted + ' left' : 'Paused · ' + formatted;
+    badge.textContent = formatted;
   }
 }
 
@@ -247,18 +325,18 @@ function setGaplessTimer(restart = false, seconds = timerSettings.minutes * 60) 
 }
 
 function showTimerSettings() {
-  $('timerMinutes').value = timerSettings.minutes;
-  $('timerFade').value = timerSettings.fadeSeconds;
+  document.querySelectorAll('#timerMinuteChips button').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(Number(btn.dataset.minutes) === timerSettings.minutes));
+  });
+  document.querySelectorAll('#timerFadeChips button').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(Number(btn.dataset.fade) === timerSettings.fadeSeconds));
+  });
   $('timerFadeControl').hidden = timerSettings.minutes === 0;
-  $('timerFade').disabled = starting || timerSettings.minutes === 0;
 }
 
-function changeTimer() {
+function applyTimerChange(partial) {
   const previous = timerSettings;
-  timerSettings = restoreTimerSettings({
-    minutes: Number($('timerMinutes').value),
-    fadeSeconds: Number($('timerFade').value),
-  });
+  timerSettings = restoreTimerSettings({...timerSettings, ...partial});
   try { localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(timerSettings)); } catch {}
   const durationChanged = timerSettings.minutes !== previous.minutes;
   showTimerSettings();
@@ -307,7 +385,6 @@ async function play() {
   const request = ++revision;
   const useGapless = isGapless();
   setStarting(true);
-  $('status').textContent = '';
   try {
     if (useGapless) {
       await gapless.play(volumes);
@@ -362,6 +439,11 @@ document.querySelectorAll('[data-mix]').forEach(button => {
     restartScreenOffMix();
   };
 });
+$('clearMix').onclick = () => {
+  tracks.forEach(name => $(name).value = 0);
+  changeLevels();
+  if (isPlaying()) pause();
+};
 
 function showMode() {
   $('modeNote').textContent = isGapless()
@@ -381,15 +463,23 @@ showMode();
 applyMix();
 
 for (const minutes of TIMER_MINUTES) {
-  $('timerMinutes').add(new Option(minutes ? minutes + ' min' : 'Off', minutes));
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.dataset.minutes = String(minutes);
+  btn.textContent = minutes ? minutes + ' min' : 'Off';
+  btn.onclick = () => applyTimerChange({minutes});
+  $('timerMinuteChips').append(btn);
 }
 for (const seconds of FADE_SECONDS) {
-  $('timerFade').add(new Option(seconds ? seconds + ' sec' : 'None', seconds));
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.dataset.fade = String(seconds);
+  btn.textContent = seconds ? seconds + ' sec' : 'None';
+  btn.onclick = () => applyTimerChange({fadeSeconds: seconds});
+  $('timerFadeChips').append(btn);
 }
 showTimerSettings();
-updateCountdown();
-$('timerMinutes').onchange = changeTimer;
-$('timerFade').onchange = changeTimer;
+updatePlayback();
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) updatePlayback();
 });
@@ -401,6 +491,7 @@ refreshSavedMixes = mountSavedMixes({
     $('boost').value = mix.boost;
     changeLevels();
     restartScreenOffMix();
+    $('savedSheet').close();
   },
 });
 

@@ -3,134 +3,204 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0a1411">
-  <meta name="description" content="Play and mix rain, ocean, fire and noise into a calm, moonlit sleep soundscape — offline.">
+  <meta name="theme-color" content="#070a0f">
+  <meta name="description" content="Play and mix rain, ocean, fire, ambience and noise into a calm sleep soundscape — offline.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>Sleep Sounds</title>
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
   <main>
-    <header>
-      <img src="icon-192.png" width="40" height="40" alt="">
-      <div class="brand">
-        <h1>Sleep Sounds</h1>
-        <p class="tagline">Night air, softly mixed.</p>
+    <header class="topbar">
+      <div class="brand-wrap">
+        <img src="icon-192.png" width="38" height="38" alt="" class="app-icon">
+        <div class="brand">
+          <h1>Sleep Sounds</h1>
+          <p id="mixSubtitle" class="tagline">Night air, softly mixed.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="openSaved" aria-label="Saved mixes" title="Saved mixes">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6.5 4.5h11v15.2l-5.5-4.2-5.5 4.2z"/>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" id="openSettings" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="7" x2="7.5" y2="7"/><line x1="11.5" y1="7" x2="20" y2="7"/><circle cx="9.5" cy="7" r="2"/>
+            <line x1="4" y1="12" x2="13" y2="12"/><line x1="17" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/>
+            <line x1="4" y1="17" x2="8.5" y2="17"/><line x1="12.5" y1="17" x2="20" y2="17"/><circle cx="10.5" cy="17" r="2"/>
+          </svg>
+        </button>
       </div>
     </header>
 
-    <section class="player" aria-label="Sound player">
-      <button type="button" class="play" id="play">
-        <span id="playIcon" aria-hidden="true">▶</span>
-        <span id="playText">Play</span>
-      </button>
-      <p id="status" class="note" role="status"></p>
+    <section class="presets-section" aria-label="Quick presets">
+      <div class="presets-strip" id="soundPresets" role="group" aria-label="Presets"></div>
+    </section>
 
-      <div class="timer">
-        <label class="control-row" for="timerMinutes">
-          Timer
-          <select id="timerMinutes" aria-describedby="timerStatus"></select>
-        </label>
-        <label class="control-row" id="timerFadeControl" for="timerFade" hidden>
-          Fade out
-          <select id="timerFade"></select>
-        </label>
+    <section class="mixer" aria-label="Sound mixer">
+      <div class="mixer-bar">
+        <div class="sound-filters" id="soundFilters" role="group" aria-label="Filter sounds"></div>
+        <button type="button" class="clear-btn" id="clearMix" hidden>Clear</button>
+      </div>
+      <div class="sound-tiles" id="soundLibrary" role="group" aria-label="Sounds"></div>
+      <p class="mixer-hint">Tap to toggle · Drag across any tile for volume</p>
+    </section>
+  </main>
+
+  <div class="dock-wrap">
+    <section class="dock" aria-label="Playback controls">
+      <button type="button" class="play-btn" id="play" aria-label="Play">
+        <span id="playIcon" class="play-icon" aria-hidden="true"></span>
+        <span id="playText" class="sr-only">Play</span>
+      </button>
+      <div class="dock-info">
+        <div id="dockTitle" class="dock-title">Rain · 70%</div>
+        <p id="status" class="dock-status" role="status"></p>
+      </div>
+      <button type="button" class="timer-pill" id="openTimer" aria-label="Sleep timer">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="13" r="7.5"/>
+          <path d="M12 9.2V13l2.7 1.6"/>
+          <path d="M9.6 3h4.8M12 3v2.4"/>
+        </svg>
+        <span id="timerBadge">Off</span>
+      </button>
+    </section>
+  </div>
+
+  <dialog id="timerSheet" class="sheet" aria-labelledby="timerSheetTitle">
+    <div class="sheet-card">
+      <div class="sheet-header">
+        <h2 id="timerSheetTitle">Sleep timer</h2>
+        <button type="button" class="sheet-close" data-close-sheet aria-label="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-group">
+          <span class="sheet-label">Duration</span>
+          <div id="timerMinuteChips" class="chip-grid" role="group" aria-label="Timer duration"></div>
+        </div>
+        <div class="sheet-group" id="timerFadeControl" hidden>
+          <span class="sheet-label">Fade out</span>
+          <div id="timerFadeChips" class="chip-grid" role="group" aria-label="Fade out duration"></div>
+        </div>
         <p id="timerStatus" class="note" role="timer" aria-live="off"></p>
       </div>
+    </div>
+  </dialog>
 
-      <div class="sounds-heading">
-        <h2 id="soundsHeading">Sounds</h2>
-        <p>Tap to toggle · Drag for volume</p>
+  <dialog id="savedSheet" class="sheet" aria-labelledby="savedSheetTitle">
+    <div class="sheet-card">
+      <div class="sheet-header">
+        <h2 id="savedSheetTitle">Saved mixes</h2>
+        <button type="button" class="sheet-close" data-close-sheet aria-label="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
       </div>
-      <div class="sound-filters" id="soundFilters" role="group" aria-label="Filter sounds"></div>
-      <div class="sound-tiles" id="soundLibrary" role="group" aria-labelledby="soundsHeading"></div>
-
-      <details>
-        <summary id="presetsHeading">Presets</summary>
-        <div class="details-content presets" id="soundPresets" role="group" aria-labelledby="presetsHeading"></div>
-      </details>
-
-      <details>
-        <summary>Saved mixes</summary>
-        <div class="details-content">
-          <fieldset id="savedMixes" class="saved-mix-panel" aria-label="Saved mix controls">
-            <ul id="savedMixList" class="saved-mix-list"></ul>
-            <form class="saved-mix-form" id="savedMixForm">
-              <label for="savedMixName">Mix name
-                <input id="savedMixName" type="text" autocomplete="off">
-              </label>
-              <button id="savedMixSubmit" type="submit">Save mix</button>
-              <button id="savedMixCancel" type="button" hidden>Cancel</button>
-            </form>
-            <p id="savedMixStatus" class="note" role="status"></p>
-          </fieldset>
-        </div>
-      </details>
-
-      <details>
-        <summary>Settings</summary>
-        <div class="details-content settings">
-          <div>
-            <label class="control-row" for="playbackMode">
-              Playback
-              <select id="playbackMode" aria-describedby="modeNote">
-                <option value="gapless">Gapless</option>
-                <option value="screen-off">Screen-off</option>
-              </select>
+      <div class="sheet-body">
+        <fieldset id="savedMixes" class="saved-mix-panel" aria-label="Saved mix controls">
+          <ul id="savedMixList" class="saved-mix-list"></ul>
+          <form class="saved-mix-form" id="savedMixForm">
+            <label for="savedMixName">Save current mix
+              <input id="savedMixName" type="text" placeholder="e.g. Rainy cabin" autocomplete="off">
             </label>
-            <p id="modeNote" class="note"></p>
-          </div>
+            <div class="saved-mix-actions">
+              <button id="savedMixSubmit" type="submit" class="primary-btn">Save mix</button>
+              <button id="savedMixCancel" type="button" hidden>Cancel</button>
+            </div>
+          </form>
+          <p id="savedMixStatus" class="note" role="status"></p>
+        </fieldset>
+      </div>
+    </div>
+  </dialog>
 
+  <dialog id="settingsSheet" class="sheet" aria-labelledby="settingsSheetTitle">
+    <div class="sheet-card">
+      <div class="sheet-header">
+        <h2 id="settingsSheetTitle">Settings</h2>
+        <button type="button" class="sheet-close" data-close-sheet aria-label="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="sheet-body settings">
+        <div class="setting-card">
           <div class="track">
             <label for="boost">Volume boost</label>
             <output id="boostValue" for="boost">100%</output>
             <input id="boost" type="range" min="100" max="150" step="5" value="100" aria-describedby="boostNote">
             <p id="boostNote" class="note"></p>
           </div>
-
-          <div>
-            <div class="utility">
-              <button type="button" id="offline">Save offline</button>
-              <button type="button" id="install">Install app</button>
-            </div>
-            <p id="offlineStatus" class="note" role="status"></p>
-            <p id="installStatus" class="note" role="status"></p>
-          </div>
-
-          <details>
-            <summary>Sound credits</summary>
-            <div class="details-content credits">
-              <p class="note">Recordings are CC0. Noise tracks are generated.</p>
-              <ul id="audioCredits"></ul>
-            </div>
-          </details>
         </div>
-      </details>
-    </section>
 
-    <template id="soundControl">
-      <div class="sound-tile">
-        <button type="button" class="sound-button" aria-pressed="false">
-          <span class="sound-name"></span>
-          <span class="sound-level" aria-hidden="true"></span>
-          <span class="sound-meter" aria-hidden="true"></span>
-        </button>
-        <input type="range" min="0" max="100" value="0">
+        <div class="setting-card">
+          <label class="control-row" for="playbackMode">
+            <span>Playback mode</span>
+            <select id="playbackMode" aria-describedby="modeNote">
+              <option value="gapless">Gapless</option>
+              <option value="screen-off">Screen-off</option>
+            </select>
+          </label>
+          <p id="modeNote" class="note"></p>
+        </div>
+
+        <div class="setting-card">
+          <span class="sheet-label">Offline &amp; app</span>
+          <div class="utility">
+            <button type="button" id="offline">Save offline</button>
+            <button type="button" id="install">Install app</button>
+          </div>
+          <p id="offlineStatus" class="note" role="status"></p>
+          <p id="installStatus" class="note" role="status"></p>
+        </div>
+
+        <details class="credits-details">
+          <summary>Sound credits</summary>
+          <div class="credits">
+            <p class="note">Recordings are CC0. Noise tracks are generated.</p>
+            <ul id="audioCredits"></ul>
+          </div>
+        </details>
       </div>
-    </template>
-  </main>
+    </div>
+  </dialog>
+
+  <template id="soundControl">
+    <div class="sound-tile">
+      <button type="button" class="sound-button" aria-pressed="false">
+        <span class="sound-fill" aria-hidden="true"></span>
+        <span class="sound-top">
+          <span class="sound-icon" aria-hidden="true"></span>
+          <span class="sound-level" aria-hidden="true"></span>
+        </span>
+        <span class="sound-name"></span>
+      </button>
+      <input type="range" min="0" max="100" value="0">
+    </div>
+  </template>
 
   <audio id="mixAudio" loop preload="auto" playsinline></audio>
   <script src="sound-library.js?v=15"></script>
-  <script src="player-config.js?v=16"></script>
+  <script src="player-config.js?v=17"></script>
   <script src="native-mix.js?v=14"></script>
   <script src="master-mix.js?v=8"></script>
   <script src="gapless-player.js?v=9"></script>
   <script src="session-settings.js?v=9"></script>
   <script src="audio-sleep-timer.js?v=9"></script>
   <script src="saved-mixes.js?v=10"></script>
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

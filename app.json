@@ -2,19 +2,19 @@
   "expo": {
     "name": "Sleep Sounds",
     "slug": "sleep-sounds",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "platforms": ["android", "ios"],
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0a1411",
+    "backgroundColor": "#070a0f",
     "icon": "./dist/icon-512.png",
     "splash": {
       "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a1411"
+      "backgroundColor": "#070a0f"
     },
     "android": {
       "package": "com.rogersau.sleepsounds",
-      "versionCode": 5
+      "versionCode": 6
     },
     "ios": {
       "bundleIdentifier": "com.rogersau.sleepsounds",

@@ -4,6 +4,7 @@ const root = 'https://example.test/app/';
 let online = true;
 const getURL = key => new URL(typeof key === 'string' ? key : key.url, root).href;
 const previousAudio = new Map([
+  ['forest-rain-v16', new Map()],
   ['forest-rain-v15', new Map()],
   ['forest-rain-v14', new Map()],
   ['forest-rain-v13', new Map([[getURL('white.wav?v=8'), 'white-noise']])],
@@ -34,10 +35,10 @@ const ctx = vm.createContext({
         const files = previousAudio.get(key);
         return {match: async path => files.has(getURL(path)) ? new Response(files.get(getURL(path))) : undefined};
       }
-      assert.equal(key, 'forest-rain-v16');
+      assert.equal(key, 'forest-rain-v17');
       return cache;
     },
-    keys: async () => ['forest-rain-v5', ...[...previousAudio.keys()].reverse(), 'forest-rain-v16', 'other-app'],
+    keys: async () => ['forest-rain-v5', ...[...previousAudio.keys()].reverse(), 'forest-rain-v17', 'other-app'],
     delete: async key => {
       previousAudio.delete(key);
       removed.push(key);
@@ -67,8 +68,8 @@ function request(path, mode, headers = {}) {
 }
 (async () => {
   await event('install');
-  assert.ok(loads.includes(getURL('app.js?v=13')));
-  assert.ok(loads.includes(getURL('style.css?v=15')));
+  assert.ok(loads.includes(getURL('app.js?v=14')));
+  assert.ok(loads.includes(getURL('style.css?v=16')));
   assert.ok(loads.includes(getURL('gapless-player.js?v=9')));
   assert.ok(loads.includes(getURL('sound-library.js?v=15')));
   assert.ok(loads.includes(getURL('audio-sleep-timer.js?v=9')));
@@ -77,7 +78,7 @@ function request(path, mode, headers = {}) {
   assert.ok(!loads.includes(getURL('ocean.wav?v=8')), 'install must not silently download new audio');
   assert.ok(!loads.includes(getURL('train.wav?v=14')), 'install fetches the shell only');
   await event('activate');
-  assert.deepEqual(removed, ['forest-rain-v5', 'forest-rain-v6', 'forest-rain-v7', 'forest-rain-v8', 'forest-rain-v9', 'forest-rain-v10', 'forest-rain-v11', 'forest-rain-v12', 'forest-rain-v13', 'forest-rain-v14', 'forest-rain-v15']);
+  assert.deepEqual(removed, ['forest-rain-v5', 'forest-rain-v6', 'forest-rain-v7', 'forest-rain-v8', 'forest-rain-v9', 'forest-rain-v10', 'forest-rain-v11', 'forest-rain-v12', 'forest-rain-v13', 'forest-rain-v14', 'forest-rain-v15', 'forest-rain-v16']);
   assert.equal(await (await request('./', 'navigate')).text(), 'fresh:' + root);
   online = false;
   assert.equal(await (await request('./', 'navigate')).text(), root);

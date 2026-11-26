@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
+import { Image, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 
-import { colors } from './theme';
+import { soundIcons } from './icons';
+import { colors, defaultSoundAccent, soundAccents } from './theme';
 
 type Props = {
+  id: string;
   title: string;
   description: string;
   value: number;
@@ -17,23 +19,25 @@ type Props = {
 type Gesture = {
   startX: number;
   startY: number;
-  meterLeft: number;
-  meterWidth: number;
+  tileLeft: number;
+  tileWidth: number;
   mode: 'pending' | 'dragging' | 'scrolling';
   level: number;
 };
 
 const dragThreshold = 8;
 
-export function SoundTile({ title, description, value, defaultValue, disabled, onChange, onDragChange }: Props) {
+export function SoundTile({ id, title, description, value, defaultValue, disabled, onChange, onDragChange }: Props) {
   const lastLevel = useRef(value || defaultValue);
   const gesture = useRef<Gesture | null>(null);
-  const meter = useRef({ x: 0, width: 0 });
+  const tileWidth = useRef(0);
   const [preview, setPreview] = useState<number | null>(null);
   const [pressed, setPressed] = useState(false);
   const level = preview ?? value;
   const active = level > 0;
   const label = active ? `${level}%` : 'Off';
+  const palette = soundAccents[id] ?? defaultSoundAccent;
+  const icon = soundIcons[id];
 
   useEffect(() => {
     if (value > 0) lastLevel.current = value;
@@ -55,8 +59,8 @@ export function SoundTile({ title, description, value, defaultValue, disabled, o
     gesture.current = {
       startX: pageX,
       startY: pageY,
-      meterLeft: pageX - locationX + meter.current.x,
-      meterWidth: meter.current.width,
+      tileLeft: pageX - locationX,
+      tileWidth: tileWidth.current,
       mode: 'pending',
       level: value,
     };
@@ -71,7 +75,7 @@ export function SoundTile({ title, description, value, defaultValue, disabled, o
       const dx = Math.abs(nativeEvent.pageX - current.startX);
       const dy = Math.abs(nativeEvent.pageY - current.startY);
       if (Math.max(dx, dy) < dragThreshold) return;
-      if (dx <= dy || current.meterWidth <= 0) {
+      if (dx <= dy || current.tileWidth <= 0) {
         current.mode = 'scrolling';
         return;
       }
@@ -79,7 +83,7 @@ export function SoundTile({ title, description, value, defaultValue, disabled, o
       onDragChange(true);
     }
 
-    const fraction = (nativeEvent.pageX - current.meterLeft) / current.meterWidth;
+    const fraction = (nativeEvent.pageX - current.tileLeft) / current.tileWidth;
     const next = Math.round(Math.max(0, Math.min(1, fraction)) * 100);
     if (next === current.level) return;
     current.level = next;
@@ -103,7 +107,12 @@ export function SoundTile({ title, description, value, defaultValue, disabled, o
 
   return (
     <View
-      style={[styles.tile, active && styles.active, pressed && styles.pressed, disabled && styles.disabled]}
+      style={[
+        styles.tile,
+        active && { backgroundColor: colors.surfaceActive, borderColor: palette.border },
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+      ]}
       pointerEvents="box-only"
       accessible
       accessibilityRole="adjustable"
@@ -116,6 +125,7 @@ export function SoundTile({ title, description, value, defaultValue, disabled, o
         { name: 'increment', label: 'Increase volume' },
         { name: 'decrement', label: 'Decrease volume' },
       ]}
+      onLayout={({ nativeEvent: { layout } }) => { tileWidth.current = layout.width; }}
       onAccessibilityAction={({ nativeEvent: { actionName } }) => {
         if (disabled) return;
         if (actionName === 'activate') toggle();
@@ -132,42 +142,85 @@ export function SoundTile({ title, description, value, defaultValue, disabled, o
         if (nativeEvent.touches.length > 1) finishGesture();
       }}
     >
-      <View style={styles.label}>
-        <Text style={[styles.title, active && styles.accent]}>{title}</Text>
-        <Text style={[styles.value, active && styles.accent]}>{label}</Text>
+      {level > 0 && (
+        <View style={[styles.fillWrap, { width: `${level}%` }]}>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.02)', palette.fill]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.fillGradient}
+          />
+          <View style={[styles.fillEdge, { backgroundColor: palette.accent }]} />
+        </View>
+      )}
+      <View style={styles.topRow}>
+        {icon && (
+          <Image
+            source={icon}
+            style={[styles.icon, { tintColor: active ? palette.accent : colors.dim }]}
+            accessible={false}
+          />
+        )}
+        <Text style={[styles.value, active && { color: palette.accent }]}>{label}</Text>
       </View>
-      <View style={styles.meter} onLayout={({ nativeEvent: { layout } }) => { meter.current = layout; }}>
-        <LinearGradient
-          colors={['#b9cbaa', '#e7f0db']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.fill, { width: `${level}%` }]}
-        />
-        <View style={[styles.thumb, active ? styles.thumbActive : styles.thumbInactive, { left: `${level}%` }]} />
-      </View>
+      <Text style={[styles.title, active && styles.titleActive]} numberOfLines={1}>{title}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   tile: {
-    width: '48%', minHeight: 64, paddingHorizontal: 11, paddingVertical: 12, gap: 12,
-    justifyContent: 'space-between', borderWidth: 1, borderRadius: 16,
-    borderColor: colors.border, backgroundColor: colors.control,
+    width: '48.3%',
+    minHeight: 104,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderRadius: 20,
+    borderColor: colors.hairline,
+    backgroundColor: colors.surface,
   },
-  active: { borderColor: colors.selectedBorder, backgroundColor: colors.selected },
-  pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
-  disabled: { opacity: 0.7 },
-  label: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 5 },
-  title: { color: colors.text, fontSize: 14, fontWeight: '600', flexShrink: 1 },
-  value: { color: colors.muted, fontSize: 12, fontVariant: ['tabular-nums'] },
-  accent: { color: colors.accent },
-  meter: { height: 5, marginHorizontal: 5, borderRadius: 999, backgroundColor: colors.background },
-  fill: { height: '100%', borderRadius: 999 },
-  thumb: {
-    position: 'absolute', top: -3, width: 11, height: 11, borderRadius: 999,
-    transform: [{ translateX: -5.5 }], backgroundColor: colors.text,
+  pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
+  disabled: { opacity: 0.55 },
+  fillWrap: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    flexDirection: 'row',
   },
-  thumbActive: { boxShadow: '0 0 8px rgba(207, 224, 194, .5)' },
-  thumbInactive: { opacity: 0.3, backgroundColor: colors.muted },
+  fillGradient: {
+    flex: 1,
+  },
+  fillEdge: {
+    width: 2,
+    height: '100%',
+    opacity: 0.85,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  icon: {
+    width: 24,
+    height: 24,
+  },
+  value: {
+    color: colors.dim,
+    fontSize: 12,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  title: {
+    color: colors.textSoft,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.15,
+  },
+  titleActive: {
+    color: colors.text,
+  },
 });

@@ -33,7 +33,7 @@ for (const id of ['cabin', 'cafe', 'train', 'rain-cafe']) {
 }
 assert.deepEqual(Array.from(library.levelsFor(library.PRESETS.find(preset => preset.id === 'rain-cafe').mix)), [60, 0, 0, 0, 0, 0, 0, 0, 0, 25]);
 const plan = vm.runInContext('({CACHE, SHELL, FILES})', ctx);
-assert.equal(plan.CACHE, 'forest-rain-v16');
+assert.equal(plan.CACHE, 'forest-rain-v17');
 const references = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
 for (const ref of references) assert.ok(plan.SHELL.includes(ref), 'Uncached script: ' + ref);
 assert.ok(plan.FILES.includes('rain.wav?v=6'));
@@ -41,6 +41,6 @@ assert.ok(plan.FILES.includes('pink.wav?v=6'));
 for (const id of ['airplane', 'train', 'coffee-shop']) assert.ok(plan.FILES.includes(id + '.wav?v=14'));
 assert.equal(new Set(plan.FILES).size, plan.FILES.length);
 const sw = fs.readFileSync('dist/sw.js', 'utf8');
-assert.match(sw, /importScripts\('sound-library\.js\?v=15', 'player-config\.js\?v=16'\)/);
+assert.match(sw, /importScripts\('sound-library\.js\?v=15', 'player-config\.js\?v=17'\)/);
 for (const file of plan.FILES) assert.ok(fs.existsSync('dist/' + file.split('?')[0]), file);
 console.log('PASS: clean defaults, safe legacy migration, explicit new opt-in persistence and shared versioned offline cache plan.');
