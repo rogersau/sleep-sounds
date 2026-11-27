@@ -8,6 +8,15 @@ import type { Levels } from './mix';
 const MIX_KEY = 'sleepSoundsMixV8';
 const TIMER_KEY = 'sleepSoundsTimer';
 const MIXES_KEY = 'sleepSoundsSavedMixes';
+const LOG_KEY = 'sleepSoundsPlaybackLog';
+
+export type PlaybackLogEntry = {
+  time: number;
+  event: string;
+  detail?: string;
+};
+
+const MAX_LOG_ENTRIES = 40;
 
 function getStorage(): Storage | null {
   try {
@@ -64,4 +73,33 @@ export function savePersonalMixes(mixes: readonly PersonalMix[]) {
   const storage = getStorage();
   if (!storage) throw new Error('Storage unavailable');
   storage.setItem(MIXES_KEY, JSON.stringify(serializePersonalMixes(mixes)));
+}
+
+export function readPlaybackLog(): PlaybackLogEntry[] {
+  try {
+    const raw = getStorage()?.getItem(LOG_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function appendPlaybackLog(event: string, detail?: string): PlaybackLogEntry[] {
+  const entry: PlaybackLogEntry = detail ? { time: Date.now(), event, detail } : { time: Date.now(), event };
+  const next = [entry, ...readPlaybackLog()].slice(0, MAX_LOG_ENTRIES);
+  try {
+    getStorage()?.setItem(LOG_KEY, JSON.stringify(next));
+  } catch {
+    // Logging must never break playback.
+  }
+  return next;
+}
+
+export function clearPlaybackLog() {
+  try {
+    getStorage()?.removeItem(LOG_KEY);
+  } catch {
+    // Ignore storage errors when clearing log.
+  }
 }

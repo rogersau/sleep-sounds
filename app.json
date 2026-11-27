@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "com.rogersau.sleepsounds",
-      "versionCode": 6
+      "versionCode": 7
     },
     "ios": {
       "bundleIdentifier": "com.rogersau.sleepsounds",

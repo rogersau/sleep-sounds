@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { AudioContext, AudioManager, PlaybackNotificationManager } from 'react-native-audio-api';
 
 import { DEFAULT_LEVELS } from '../dist/sound-library.js';
 import type { TimerSettings } from '../dist/session-settings.js';
 import { LoopMixer } from './loopMixer';
 import { masterMix, type Levels } from './mix';
-import { readTimerSettings, saveTimerSettings } from './preferences';
+import { appendPlaybackLog, readTimerSettings, saveTimerSettings } from './preferences';
 import { loadActiveLayers, sampleRate } from './tracks';
 
 type Mix = { levels: Levels; boost: number };
@@ -18,10 +19,12 @@ type Session = {
   command: number;
   wantsPlayback: boolean;
   resumeAfterInterruption: boolean;
+  pausedByRouteAt: number | null;
   mounted: boolean;
 };
 
 const metadata = { title: 'Your soundscape', artist: 'Sleep Sounds' };
+const ROUTE_RECONNECT_WINDOW_MS = 15_000;
 
 async function closeAudio(session: Session) {
   const context = session.context;
@@ -48,6 +51,7 @@ export function useSoundscape() {
     command: 0,
     wantsPlayback: false,
     resumeAfterInterruption: false,
+    pausedByRouteAt: null,
     mounted: false,
   }).current;
   const [playing, setPlaying] = useState(false);
@@ -58,18 +62,23 @@ export function useSoundscape() {
 
   const finishTimer = useCallback((pause: () => void) => {
     if (!session.mounted || !session.wantsPlayback) return;
+    appendPlaybackLog('timer_finished');
     setTimerRemaining(0);
     setTimerFinished(true);
     pause();
   }, [session]);
 
-  const requestPlayback = useCallback(function request(play: boolean, interrupted = false) {
-    if (!interrupted) session.resumeAfterInterruption = false;
+  const requestPlayback = useCallback(function request(play: boolean, reason = 'user', interrupted = false) {
+    if (!interrupted) {
+      session.resumeAfterInterruption = false;
+      session.pausedByRouteAt = null;
+    }
     if (session.wantsPlayback === play) return;
     if (play && session.mix.levels.every(level => level === 0)) {
       setError('Turn up a sound to start listening.');
       return;
     }
+    appendPlaybackLog(play ? 'play' : 'pause', reason);
     session.wantsPlayback = play;
     if (play) setTimerFinished(false);
     const command = ++session.command;
@@ -107,6 +116,7 @@ export function useSoundscape() {
       if (!current()) return;
 
       context.onstatechange = () => {
+        appendPlaybackLog('context_state', context.state);
         if (session.mounted) setPlaying(context.state === 'running');
       };
       await context.resume();
@@ -116,11 +126,12 @@ export function useSoundscape() {
       const timer = session.mixer.timer;
       const { minutes, fadeSeconds } = session.timerSettings;
       if (minutes && (timer.remaining ?? 0) <= 0) {
-        timer.schedule(minutes * 60, fadeSeconds, () => finishTimer(() => request(false)));
+        timer.schedule(minutes * 60, fadeSeconds, () => finishTimer(() => request(false, 'timer')));
       }
       setTimerRemaining(timer.remaining);
       if (current()) setPlaying(true);
-    }).catch(async () => {
+    }).catch(async err => {
+      appendPlaybackLog('error', err instanceof Error ? err.message : String(err));
       await closeAudio(session);
       if (current()) {
         session.wantsPlayback = false;
@@ -135,24 +146,41 @@ export function useSoundscape() {
 
   useEffect(() => {
     session.mounted = true;
+    appendPlaybackLog('app_started');
     AudioManager.setSystemOptions({ ios: { category: 'playback', mode: 'default' } });
+    const appStateSub = AppState.addEventListener('change', nextState => {
+      appendPlaybackLog('app_state', nextState);
+    });
     const subscriptions = [
-      PlaybackNotificationManager.addEventListener('playbackNotificationPlay', () => requestPlayback(true)),
-      PlaybackNotificationManager.addEventListener('playbackNotificationPause', () => requestPlayback(false)),
+      PlaybackNotificationManager.addEventListener('playbackNotificationPlay', () => requestPlayback(true, 'notification')),
+      PlaybackNotificationManager.addEventListener('playbackNotificationPause', () => requestPlayback(false, 'notification')),
       AudioManager.addSystemEventListener('routeChange', ({ reason }) => {
-        if (reason === 'OldDeviceUnavailable') requestPlayback(false);
+        appendPlaybackLog('route_change', `${reason} (playing=${session.wantsPlayback})`);
+        if (reason === 'OldDeviceUnavailable' && session.wantsPlayback) {
+          session.pausedByRouteAt = Date.now();
+          requestPlayback(false, 'route_unavailable', true);
+        } else if (
+          reason === 'NewDeviceAvailable'
+          && session.pausedByRouteAt != null
+          && Date.now() - session.pausedByRouteAt <= ROUTE_RECONNECT_WINDOW_MS
+        ) {
+          session.pausedByRouteAt = null;
+          requestPlayback(true, 'route_reconnected');
+        }
       }),
       AudioManager.addSystemEventListener('interruption', ({ type, shouldResume }) => {
+        appendPlaybackLog('interruption', `${type} (shouldResume=${String(shouldResume)})`);
         if (type === 'began' && session.wantsPlayback) {
           session.resumeAfterInterruption = true;
-          requestPlayback(false, true);
+          requestPlayback(false, 'interruption', true);
         } else if (type === 'ended' && session.resumeAfterInterruption) {
           session.resumeAfterInterruption = false;
-          if (shouldResume) requestPlayback(true);
+          if (shouldResume) requestPlayback(true, 'interruption_resume');
         }
       }),
     ];
     return () => {
+      appStateSub.remove();
       for (const subscription of subscriptions) subscription?.remove();
       session.mounted = false;
       session.wantsPlayback = false;
@@ -167,7 +195,7 @@ export function useSoundscape() {
       const remaining = session.mixer?.timer.remaining;
       if (remaining == null) return;
       setTimerRemaining(Math.ceil(remaining));
-      if (remaining <= 0) finishTimer(() => requestPlayback(false));
+      if (remaining <= 0) finishTimer(() => requestPlayback(false, 'timer'));
     }, 500);
     return () => clearInterval(tick);
   }, [playing, timerSettings.minutes, finishTimer, requestPlayback, session]);
@@ -186,13 +214,13 @@ export function useSoundscape() {
     const seconds = settings.minutes && session.wantsPlayback && session.context?.state === 'running'
       ? (sameDuration && remaining > 0 ? remaining : settings.minutes * 60)
       : 0;
-    timer.schedule(seconds, settings.fadeSeconds, () => finishTimer(() => requestPlayback(false)));
+    timer.schedule(seconds, settings.fadeSeconds, () => finishTimer(() => requestPlayback(false, 'timer')));
     setTimerRemaining(timer.remaining);
   }
 
   function toggle(levels: Levels, boost: number) {
     session.mix = { levels, boost };
-    requestPlayback(!session.wantsPlayback);
+    requestPlayback(!session.wantsPlayback, 'user');
   }
 
   function updateMix(levels: Levels, boost: number) {

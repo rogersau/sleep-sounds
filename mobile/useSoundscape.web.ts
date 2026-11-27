@@ -4,7 +4,7 @@ import { AudioSleepTimer } from '../dist/audio-sleep-timer.js';
 import { DEFAULT_LEVELS } from '../dist/sound-library.js';
 import type { TimerSettings } from '../dist/session-settings.js';
 import { masterMix, type Levels } from './mix';
-import { readTimerSettings, saveTimerSettings } from './preferences.web';
+import { appendPlaybackLog, readTimerSettings, saveTimerSettings } from './preferences.web';
 import { loadActiveLayers } from './tracks.web';
 
 type Mix = { levels: Levels; boost: number };
@@ -91,12 +91,13 @@ export function useSoundscape() {
     pause();
   }, [session]);
 
-  const requestPlayback = useCallback(function request(play: boolean) {
+  const requestPlayback = useCallback(function request(play: boolean, reason = 'user') {
     if (session.wantsPlayback === play) return;
     if (play && session.mix.levels.every(level => level === 0)) {
       setError('Turn up a sound to start listening.');
       return;
     }
+    appendPlaybackLog(play ? 'play' : 'pause', reason);
     session.wantsPlayback = play;
     if (play) setTimerFinished(false);
     const command = ++session.command;

@@ -8,6 +8,15 @@ import type { Levels } from './mix';
 const preferences = new File(Paths.document, 'sleep-sounds-mix.json');
 const timerFile = new File(Paths.document, 'sleep-sounds-timer.json');
 const mixesFile = new File(Paths.document, 'sleep-sounds-presets.json');
+const logFile = new File(Paths.document, 'sleep-sounds-log.json');
+
+export type PlaybackLogEntry = {
+  time: number;
+  event: string;
+  detail?: string;
+};
+
+const MAX_LOG_ENTRIES = 40;
 
 export function readLevels(): Levels {
   try {
@@ -51,4 +60,32 @@ export function readPersonalMixes(): PersonalMix[] {
 
 export function savePersonalMixes(mixes: readonly PersonalMix[]) {
   mixesFile.write(JSON.stringify(serializePersonalMixes(mixes)));
+}
+
+export function readPlaybackLog(): PlaybackLogEntry[] {
+  try {
+    const parsed = JSON.parse(logFile.textSync());
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function appendPlaybackLog(event: string, detail?: string): PlaybackLogEntry[] {
+  const entry: PlaybackLogEntry = detail ? { time: Date.now(), event, detail } : { time: Date.now(), event };
+  const next = [entry, ...readPlaybackLog()].slice(0, MAX_LOG_ENTRIES);
+  try {
+    logFile.write(JSON.stringify(next));
+  } catch {
+    // Logging must never break playback.
+  }
+  return next;
+}
+
+export function clearPlaybackLog() {
+  try {
+    logFile.write('[]');
+  } catch {
+    // Ignore storage errors when clearing log.
+  }
 }

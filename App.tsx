@@ -10,7 +10,7 @@ import { BottomSheet, SavedMixes, SleepTimer } from './mobile/SessionControls';
 import { MiniPlayer } from './mobile/MiniPlayer';
 import { SoundTile } from './mobile/SoundTile';
 import { uiIcons } from './mobile/icons';
-import { readLevels, saveLevels } from './mobile/preferences';
+import { clearPlaybackLog, readLevels, readPlaybackLog, saveLevels, type PlaybackLogEntry } from './mobile/preferences';
 import { useSoundscape } from './mobile/useSoundscape';
 import { masterMix, type Levels } from './mobile/mix';
 import { colors } from './mobile/theme';
@@ -77,15 +77,28 @@ function summarizeActive(levels: Levels) {
   };
 }
 
+function formatLogTime(timestamp: number) {
+  const date = new Date(timestamp);
+  const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${day} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const [levels, setLevels] = useState(readLevels);
   const [boost, setBoost] = useState(100);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [sheet, setSheet] = useState<'timer' | 'saved' | 'settings' | null>(null);
+  const [playbackLog, setPlaybackLog] = useState<PlaybackLogEntry[]>([]);
   const [linkError, setLinkError] = useState(false);
   const [draggingSound, setDraggingSound] = useState(false);
   const audio = useSoundscape();
+
+  function openSettings() {
+    setPlaybackLog(readPlaybackLog());
+    setSheet('settings');
+  }
 
   function applyLevels(next: Levels, nextBoost = boost) {
     setLevels(next);
@@ -168,7 +181,7 @@ function PlayerScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Settings"
-                onPress={() => setSheet('settings')}
+                onPress={openSettings}
                 style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
               >
                 <Image source={uiIcons.settings} style={styles.iconBtnImg} accessible={false} />
@@ -325,6 +338,38 @@ function PlayerScreen() {
             <Text accessibilityLiveRegion="polite" style={[styles.small, styles.error]}>
               The source link could not open.
             </Text>
+          )}
+        </View>
+
+        <View style={styles.settingCard}>
+          <View style={styles.logHeader}>
+            <Text style={styles.sectionLabel}>PLAYBACK LOG</Text>
+            {playbackLog.length > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear playback log"
+                onPress={() => {
+                  clearPlaybackLog();
+                  setPlaybackLog([]);
+                }}
+                style={({ pressed }) => [styles.logClearBtn, pressed && styles.pressed]}
+              >
+                <Text style={styles.logClearText}>Clear</Text>
+              </Pressable>
+            )}
+          </View>
+          {playbackLog.length === 0 ? (
+            <Text style={styles.small}>No events recorded yet.</Text>
+          ) : (
+            <View style={styles.logList}>
+              {playbackLog.slice(0, 20).map((entry, idx) => (
+                <Text key={`${entry.time}-${idx}`} style={styles.logLine}>
+                  <Text style={styles.logTime}>{formatLogTime(entry.time)} </Text>
+                  <Text style={styles.logEvent}>{entry.event}</Text>
+                  {entry.detail ? <Text style={styles.logDetail}> · {entry.detail}</Text> : null}
+                </Text>
+              ))}
+            </View>
           )}
         </View>
       </BottomSheet>
@@ -547,6 +592,41 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.error,
+  },
+  logHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  logClearBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+  },
+  logClearText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  logList: {
+    gap: 4,
+  },
+  logLine: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontVariant: ['tabular-nums'],
+  },
+  logTime: {
+    color: colors.dim,
+  },
+  logEvent: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  logDetail: {
+    color: colors.muted,
   },
   pressed: {
     opacity: 0.78,
